@@ -1,6 +1,7 @@
 # ProjetoCloud-2024.2
 
 ![Diagrama UML](https://github.com/user-attachments/assets/0bce15e5-7c0e-413d-bf8b-7141b5c9c3b9)
+![Captura de tela 2024-08-26 141319](https://github.com/user-attachments/assets/663ef288-9b24-4993-8c12-f6ab6496c6e2)
 
 
 -- Criação da Tabela Cliente
