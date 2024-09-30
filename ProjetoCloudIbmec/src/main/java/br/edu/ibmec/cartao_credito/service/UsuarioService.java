@@ -23,9 +23,9 @@ public class UsuarioService {
 
     // Criar um novo usuário
     public Usuario criarUsuario(Usuario usuario) throws UsuarioException {
-        if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
-            throw new UsuarioException("Usuário já existe com este e-mail.");
-        }
+        // if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
+        //     throw new UsuarioException("Usuário já existe com este e-mail.");
+        // }
         return usuarioRepository.save(usuario);
     }
 
