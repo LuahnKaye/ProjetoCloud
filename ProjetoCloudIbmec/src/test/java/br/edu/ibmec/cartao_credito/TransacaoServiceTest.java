@@ -5,7 +5,6 @@ import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,8 +45,8 @@ class TransacaoServiceTest {
         Transacao transacao = transacaoService.autorizacaoTransacao(cartao, 100, "Loja X");
 
         assertNotNull(transacao);
-        assertEquals(900, cartao.getLimite()); // Limite foi atualizado
-        verify(transacaoRepository).save(any(Transacao.class));
+        assertEquals(900, cartao.getLimite());
+        verify(transacaoRepository).save(transacao);
         verify(cartaoRepository).save(cartao);
     }
 
@@ -75,11 +74,10 @@ class TransacaoServiceTest {
 
     @Test
     void testAutorizacaoTransacao_AltaFrequencia() throws Exception {
-        // Criar 3 transações recentes
         LocalDateTime now = LocalDateTime.now();
-        cartao.getTransacoes().add(new Transacao(1, now.minusMinutes(1), 50, "Loja X"));
-        cartao.getTransacoes().add(new Transacao(2, now.minusSeconds(30), 50, "Loja X"));
-        cartao.getTransacoes().add(new Transacao(3, now.minusSeconds(10), 50, "Loja Y"));
+        cartao.getTransacoes().add(new Transacao(now.minusMinutes(1), 50, "Loja X"));
+        cartao.getTransacoes().add(new Transacao(now.minusSeconds(30), 50, "Loja X"));
+        cartao.getTransacoes().add(new Transacao(now.minusSeconds(10), 50, "Loja Y"));
 
         Exception exception = assertThrows(Exception.class, () -> {
             transacaoService.autorizacaoTransacao(cartao, 100, "Loja Z");
@@ -90,11 +88,9 @@ class TransacaoServiceTest {
 
     @Test
     void testAutorizacaoTransacao_TransacaoDuplicada() throws Exception {
-        // Criar 2 transações semelhantes
         LocalDateTime now = LocalDateTime.now();
-        cartao.getTransacoes().add(new Transacao(1, now.minusMinutes(1), 50, "Loja X"));
-        cartao.getTransacoes().add(new Transacao(2, now.minusSeconds(30), 50, "Loja X"));
-        
+        cartao.getTransacoes().add(new Transacao(now.minusMinutes(1), 50, "Loja X"));
+        cartao.getTransacoes().add(new Transacao(now.minusSeconds(30), 50, "Loja X"));
 
         Exception exception = assertThrows(Exception.class, () -> {
             transacaoService.autorizacaoTransacao(cartao, 50, "Loja X");

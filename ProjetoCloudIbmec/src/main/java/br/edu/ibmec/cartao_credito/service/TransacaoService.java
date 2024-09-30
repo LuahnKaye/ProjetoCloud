@@ -3,6 +3,7 @@ package br.edu.ibmec.cartao_credito.service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,6 @@ public class TransacaoService {
     private final int MAX_SIMILAR_TRANSACTIONS = 2;            // No máximo 2 transações semelhantes no intervalo
 
     public Transacao autorizacaoTransacao(Cartao cartao, double valor, String comerciante) throws Exception {
-
         // Verificar se o cartão está ativo
         if (!cartao.getAtivo()) {
             throw new Exception("Cartão não está ativo");
@@ -59,27 +59,30 @@ public class TransacaoService {
     }
 
     private void verificarAntifraude(Cartao cartao, double valor, String comerciante) throws Exception {
-
-        // Tempo atual menos 2 minutos
         LocalDateTime intervaloLimite = LocalDateTime.now().minus(TRANSACTION_TIME_INTERVAL_MINUTES, ChronoUnit.MINUTES);
-
-        // Transações dentro do intervalo de tempo
         List<Transacao> transacoesRecentes = cartao.getTransacoes().stream()
                 .filter(t -> t.getDataTransacao().isAfter(intervaloLimite))
                 .collect(Collectors.toList());
 
-        // Verificar se há mais de 3 transações no intervalo de 2 minutos
         if (transacoesRecentes.size() >= MAX_TRANSACTIONS_IN_INTERVAL) {
             throw new Exception("Alta frequência de transações em um curto intervalo");
         }
 
-        // Verificar se há mais de 2 transações semelhantes (mesmo valor e comerciante) no intervalo de 2 minutos
         long transacoesSemelhantes = transacoesRecentes.stream()
                 .filter(t -> t.getValor() == valor && t.getComerciante().equals(comerciante))
                 .count();
 
         if (transacoesSemelhantes >= MAX_SIMILAR_TRANSACTIONS) {
             throw new Exception("Transação duplicada");
+        }
+    }
+
+    public Transacao buscarTransacaoPorId(int id) throws Exception {
+        Optional<Transacao> transacaoOpt = repository.findById(id);
+        if (transacaoOpt.isPresent()) {
+            return transacaoOpt.get();
+        } else {
+            throw new Exception("Transação com ID " + id + " não encontrada.");
         }
     }
 }
