@@ -9,21 +9,31 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 public class Transacao {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public int id;
+    private int id;
     
     @Column
-    public LocalDateTime dataTransacao;
+    private LocalDateTime dataTransacao;
 
     @Column
-    public double valor;
+    private double valor;
 
     @Column
-    public String comerciante;
+    private String comerciante;
     
+    // Construtor adicional sem o id (já que é gerado automaticamente)
+    public Transacao(LocalDateTime dataTransacao, double valor, String comerciante) {
+        this.dataTransacao = dataTransacao;
+        this.valor = valor;
+        this.comerciante = comerciante;
+    }
 }

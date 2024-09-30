@@ -41,7 +41,7 @@ class UsuarioServiceTest {
     @Test
     void testCriarUsuario_Sucesso() throws UsuarioException {
         Usuario novoUsuario = new Usuario();
-        novoUsuario.setNome("John Doe");
+        novoUsuario.setNome("Luahn Kaiaque");
         novoUsuario.setCpf("123.456.789-00");
         novoUsuario.setDataNascimento(LocalDateTime.now().minusYears(30));
 
