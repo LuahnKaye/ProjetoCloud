@@ -37,6 +37,9 @@ public class Usuario {
     @CPF(message = "Campo cpf não está em um formato correto")
     private String cpf; 
 
+    @Column(nullable = false, unique = true)
+    private String email;
+
     @OneToMany
     @JoinColumn(referencedColumnName = "id", name = "usuario_id")
     private List<Cartao> cartoes;
