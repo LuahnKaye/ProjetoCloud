@@ -3,7 +3,7 @@ package br.edu.ibmec.cartao_credito.service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,39 +17,40 @@ import br.edu.ibmec.cartao_credito.repository.TransacaoRepository;
 public class TransacaoService {
 
     @Autowired
-    private TransacaoRepository transacaoRepository;
+    private TransacaoRepository repository;
 
     @Autowired
     private CartaoRepository cartaoRepository;
 
-    private final long TRANSACTION_TIME_INTERVAL = 3;
+    private final long TRANSACTION_TIME_INTERVAL_MINUTES = 2;  // Intervalo de 2 minutos
+    private final int MAX_TRANSACTIONS_IN_INTERVAL = 3;        // No máximo 3 transações no intervalo
+    private final int MAX_SIMILAR_TRANSACTIONS = 2;            // No máximo 2 transações semelhantes no intervalo
 
-    public Transacao autorizacaoTransacao(int cartaoId, double valor, String comerciante) throws Exception {
-        // Recupera o cartão
-        Cartao cartao = cartaoRepository.findById(cartaoId)
-                .orElseThrow(() -> new Exception("Cartão não encontrado"));
+    public Transacao autorizacaoTransacao(Cartao cartao, double valor, String comerciante) throws Exception {
 
-        // Verifica se o cartão está ativo
+        // Verificar se o cartão está ativo
         if (!cartao.getAtivo()) {
             throw new Exception("Cartão não está ativo");
         }
 
-        // Verifica se o cartão tem limite suficiente
+        // Verificar se o valor da transação excede o limite disponível
         if (cartao.getLimite() < valor) {
-            throw new Exception("Cartão sem limite para efetuar a compra");
+            throw new Exception("Limite insuficiente");
         }
 
-        // Verifica as regras de antifraude
-        verificarAntifraude(cartao, valor);
+        // Verificar regras antifraude
+        this.verificarAntifraude(cartao, valor, comerciante);
 
-        // Cria e salva a transação
+        // Criar uma nova transação
         Transacao transacao = new Transacao();
         transacao.setComerciante(comerciante);
         transacao.setDataTransacao(LocalDateTime.now());
         transacao.setValor(valor);
-        transacaoRepository.save(transacao);
 
-        // Atualiza o limite do cartão e salva
+        // Salvar a nova transação
+        repository.save(transacao);
+
+        // Atualizar o limite do cartão
         cartao.setLimite(cartao.getLimite() - valor);
         cartao.getTransacoes().add(transacao);
         cartaoRepository.save(cartao);
@@ -57,17 +58,28 @@ public class TransacaoService {
         return transacao;
     }
 
-    private void verificarAntifraude(Cartao cartao, double valor) throws Exception {
-        LocalDateTime localDateTime = LocalDateTime.now().minus(TRANSACTION_TIME_INTERVAL, ChronoUnit.MINUTES);
+    private void verificarAntifraude(Cartao cartao, double valor, String comerciante) throws Exception {
 
-        List<Transacao> ultimasTransacoes = cartao
-                .getTransacoes()
-                .stream()
-                .filter(x -> x.getDataTransacao().isAfter(localDateTime))
-                .toList();
+        // Tempo atual menos 2 minutos
+        LocalDateTime intervaloLimite = LocalDateTime.now().minus(TRANSACTION_TIME_INTERVAL_MINUTES, ChronoUnit.MINUTES);
 
-        if (ultimasTransacoes.size() >= 3) {
-            throw new Exception("Cartão utilizado muitas vezes em um período curto");
+        // Transações dentro do intervalo de tempo
+        List<Transacao> transacoesRecentes = cartao.getTransacoes().stream()
+                .filter(t -> t.getDataTransacao().isAfter(intervaloLimite))
+                .collect(Collectors.toList());
+
+        // Verificar se há mais de 3 transações no intervalo de 2 minutos
+        if (transacoesRecentes.size() >= MAX_TRANSACTIONS_IN_INTERVAL) {
+            throw new Exception("Alta frequência de transações em um curto intervalo");
+        }
+
+        // Verificar se há mais de 2 transações semelhantes (mesmo valor e comerciante) no intervalo de 2 minutos
+        long transacoesSemelhantes = transacoesRecentes.stream()
+                .filter(t -> t.getValor() == valor && t.getComerciante().equals(comerciante))
+                .count();
+
+        if (transacoesSemelhantes >= MAX_SIMILAR_TRANSACTIONS) {
+            throw new Exception("Transação duplicada");
         }
     }
 }
